@@ -85,7 +85,7 @@ def enviar_email(destinatario, token, dias=90):
         </div>
         """
         msg.attach(MIMEText(html, "html"))
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as server:
             server.login(EMAIL_FROM, EMAIL_PASSWORD)
             server.sendmail(EMAIL_FROM, destinatario, msg.as_string())
         return True
