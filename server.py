@@ -19,13 +19,12 @@ import mercadopago
 
 app = Flask(__name__)
 
-# CORS — permite llamadas desde Netlify y cualquier origen
-CORS(app, origins=[
-    os.environ.get("FRONTEND_URL", "*"),
+# CORS — permite llamadas desde Netlify y entornos locales de prueba
+CORS(app, resources={r"/*": {"origins": [
     "https://exploremos-juntos.netlify.app",
     "http://localhost",
     "http://127.0.0.1"
-])
+]}}, supports_credentials=False)
 
 DB_FILE          = "tokens.json"
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
