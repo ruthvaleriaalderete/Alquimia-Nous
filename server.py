@@ -19,8 +19,9 @@ import mercadopago
 
 app = Flask(__name__)
 
-# CORS — permite llamadas desde Netlify y entornos locales de prueba
+# CORS — permite llamadas desde Cloudflare Pages, Netlify (legado) y entornos locales de prueba
 CORS(app, resources={r"/*": {"origins": [
+    "https://exploremos-juntos-alquimia-nous.ruthvaleriaal.workers.dev",
     "https://exploremos-juntos.netlify.app",
     "http://localhost",
     "http://127.0.0.1"
@@ -32,7 +33,7 @@ DEEPSEEK_URL     = "https://api.deepseek.com/chat/completions"
 MP_ACCESS_TOKEN  = os.environ.get("MP_ACCESS_TOKEN")
 EMAIL_FROM       = os.environ.get("EMAIL_FROM", "alquimianous.creaciones@gmail.com")
 EMAIL_PASSWORD   = os.environ.get("EMAIL_PASSWORD")
-URL_SITIO        = os.environ.get("URL_SITIO", "https://exploremos-juntos.netlify.app")
+URL_SITIO        = os.environ.get("URL_SITIO", "https://exploremos-juntos-alquimia-nous.ruthvaleriaal.workers.dev")
 URL_SERVIDOR     = os.environ.get("URL_SERVIDOR", "https://alquimia-nous.onrender.com")
 PRECIO           = 7000
 DIAS_ACCESO      = 90
