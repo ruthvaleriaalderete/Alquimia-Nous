@@ -10,6 +10,8 @@ import json
 import uuid
 import smtplib
 import requests
+import psycopg2
+import psycopg2.extras
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -28,6 +30,7 @@ CORS(app, resources={r"/*": {"origins": [
 ]}}, supports_credentials=False)
 
 DB_FILE          = "tokens.json"
+DATABASE_URL     = os.environ.get("DATABASE_URL")
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
 DEEPSEEK_URL     = "https://api.deepseek.com/chat/completions"
 MP_ACCESS_TOKEN  = os.environ.get("MP_ACCESS_TOKEN")
@@ -45,15 +48,69 @@ Tono cálido, profundo, en español rioplatense. Sin tecnicismos innecesarios.
 Nunca subestimás al que pregunta. Podés hacer preguntas de vuelta.
 """
 
+def get_conexion():
+    return psycopg2.connect(DATABASE_URL)
+
+def inicializar_db():
+    """Crea la tabla de tokens si no existe. Se llama una vez al arrancar el servidor."""
+    if not DATABASE_URL:
+        return
+    conn = get_conexion()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS tokens (
+            token VARCHAR(20) PRIMARY KEY,
+            email TEXT,
+            fecha TEXT,
+            fecha_vencimiento TEXT,
+            payment_id TEXT,
+            activo BOOLEAN DEFAULT TRUE
+        )
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+
 def cargar_db():
-    if not os.path.exists(DB_FILE):
-        return {}
-    with open(DB_FILE) as f:
-        return json.load(f)
+    """Devuelve todos los tokens como diccionario {token: {datos}}, igual que antes con el JSON."""
+    conn = get_conexion()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT * FROM tokens")
+    filas = cur.fetchall()
+    cur.close()
+    conn.close()
+    db = {}
+    for fila in filas:
+        db[fila["token"]] = dict(fila)
+    return db
 
 def guardar_db(db):
-    with open(DB_FILE, "w") as f:
-        json.dump(db, f, indent=2, ensure_ascii=False)
+    """Recibe el diccionario completo (como antes) y lo sincroniza con la base de datos."""
+    conn = get_conexion()
+    cur = conn.cursor()
+    for token, entry in db.items():
+        cur.execute("""
+            INSERT INTO tokens (token, email, fecha, fecha_vencimiento, payment_id, activo)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (token) DO UPDATE SET
+                email = EXCLUDED.email,
+                fecha = EXCLUDED.fecha,
+                fecha_vencimiento = EXCLUDED.fecha_vencimiento,
+                payment_id = EXCLUDED.payment_id,
+                activo = EXCLUDED.activo
+        """, (
+            token,
+            entry.get("email"),
+            entry.get("fecha"),
+            entry.get("fecha_vencimiento"),
+            entry.get("payment_id"),
+            entry.get("activo", True)
+        ))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+inicializar_db()
 
 def generar_token():
     return str(uuid.uuid4()).replace("-", "").upper()[:12]
