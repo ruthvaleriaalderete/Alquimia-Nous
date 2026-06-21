@@ -3,4 +3,4 @@ flask-cors==4.0.0
 requests==2.31.0
 gunicorn==21.2.0
 mercadopago==2.2.2
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.12
